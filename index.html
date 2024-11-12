@@ -2,47 +2,91 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Water Distortion Effect</title>
-    <script src="p5.js"></script>
+    <title>Responsive Water Distortion</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/spite/ccapture.js/build/CCapture.all.min.js"></script>
+    <style>
+        body { margin: 0; display: flex; justify-content: center; align-items: center; }
+        canvas { border: 1px solid black; }
+    </style>
 </head>
 <body>
     <script>
         let img;
-        let pixelSize = 10; // Control the pixelation level
+        let pixelSize = 8; // Control the pixelation level
+        let capturer;
+        let duration = 60; // Video duration in seconds
+        let fps = 300;
+        let recording = false;
 
-        // Preload the image
         function preload() {
-            img = loadImage("m.png"); // Replace with your image file
+            img = loadImage("your-image.png"); // Replace with your image file
         }
 
         function setup() {
-            createCanvas(1080, 1920);
-            noLoop();
+            let canvasHeight = windowHeight;
+            let canvasWidth = (img.width / img.height) * canvasHeight;
+            createCanvas(canvasWidth, canvasHeight);
+            
+            // Set up video capture
+            capturer = new CCapture({
+                format: 'webm',
+                framerate: fps,
+                verbose: true
+            });
+
+            frameRate(fps);
+            noLoop(); // Prevent continuous draw; we'll handle frame updates manually
+            recording = true;
+            capturer.start();
         }
 
         function draw() {
             background(0, 0); // Transparent background
+
+            // Resize and center the image while maintaining aspect ratio
+            let imgHeight = height;
+            let imgWidth = (img.width / img.height) * height;
+
             img.loadPixels();
-            
-            for (let y = 0; y < img.height; y += pixelSize) {
-                for (let x = 0; x < img.width; x += pixelSize) {
-                    // Get pixel color
+
+            // Animate water distortion
+            let time = millis() * 0.0005;
+            for (let y = 0; y < imgHeight; y += pixelSize) {
+                for (let x = 0; x < imgWidth; x += pixelSize) {
                     let index = (x + y * img.width) * 4;
                     let r = img.pixels[index];
                     let g = img.pixels[index + 1];
                     let b = img.pixels[index + 2];
                     let a = img.pixels[index + 3];
 
-                    // Apply a noise-based offset to warp the pixels
-                    let offsetX = int(noise(x * 0.05, y * 0.05) * pixelSize);
-                    let offsetY = int(noise(y * 0.05, x * 0.05) * pixelSize);
-                    
-                    // Draw a pixelated rectangle with distortion
+                    // Apply noise-based offset to warp pixels over time
+                    let offsetX = int(noise(x * 0.05, y * 0.05, time) * pixelSize) - pixelSize / 2;
+                    let offsetY = int(noise(y * 0.05, x * 0.05, time) * pixelSize) - pixelSize / 2;
+
+                    // Draw pixelated rectangle with dynamic distortion
                     fill(r, g, b, a);
                     noStroke();
                     rect(x + offsetX, y + offsetY, pixelSize, pixelSize);
                 }
             }
+
+            // Capture each frame if recording
+            if (recording) {
+                capturer.capture(canvas);
+                if (frameCount >= duration * fps) {
+                    capturer.stop();
+                    capturer.save();
+                    noLoop();
+                    recording = false;
+                }
+            }
+        }
+
+        function windowResized() {
+            let canvasHeight = windowHeight;
+            let canvasWidth = (img.width / img.height) * canvasHeight;
+            resizeCanvas(canvasWidth, canvasHeight);
         }
     </script>
 </body>
