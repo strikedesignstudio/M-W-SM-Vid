@@ -11,7 +11,8 @@
 <body>
 
     <script>
-        let particles = [];
+
+let particles = [];
 let recorder;
 let chunks = [];
 let canvas;
@@ -26,9 +27,9 @@ function setup() {
   canvas = createCanvas(canvasWidth, canvasHeight);
   canvas.id("p5Canvas");
   pixelDensity(1);
-
+  
   // Initialize particles
-  for (let i = 0; i < 300; i++) {
+  for (let i = 0; i < 100; i++) {
     particles.push(new Particle());
   }
 
@@ -37,7 +38,7 @@ function setup() {
   recorder = new MediaRecorder(stream);
   recorder.ondataavailable = (e) => chunks.push(e.data);
   recorder.onstop = saveVideo;
-  
+
   // Start recording
   startRecording();
 }
@@ -45,14 +46,11 @@ function setup() {
 function draw() {
   background(10, 30, 50, 50); // Semi-transparent background for fluid effect
   
-  loadPixels();
-  
+  // Draw and update each particle
   for (let p of particles) {
     p.update();
     p.display();
   }
-
-  updatePixels();
 }
 
 function startRecording() {
@@ -77,40 +75,49 @@ function saveVideo() {
   chunks = [];
 }
 
-// Particle class
+// Particle class with size variation
 class Particle {
   constructor() {
     this.x = random(width);
     this.y = random(height);
-    this.vx = 0;
-    this.vy = 0;
-    this.alpha = random(50, 200);
+    this.vx = random(-1, 1);
+    this.vy = random(-1, 1);
+    this.baseSize = random(20, 50);
+    this.size = this.baseSize;
+    this.alpha = random(100, 200);
+    this.offset = random(1000); // Random offset for size oscillation
   }
 
   update() {
     // Add fluid-like movement using Perlin noise
-    let angle = noise(this.x * 0.01, this.y * 0.01) * TWO_PI * 2;
-    this.vx = cos(angle);
-    this.vy = sin(angle);
+    let angle = noise(this.x * 0.005, this.y * 0.005) * TWO_PI * 2;
+    this.vx += cos(angle) * 0.5;
+    this.vy += sin(angle) * 0.5;
 
     this.x += this.vx;
     this.y += this.vy;
 
-    // Wrap around the edges
+    // Apply gentle friction
+    this.vx *= 0.95;
+    this.vy *= 0.95;
+
+    // Wrap around edges
     if (this.x < 0) this.x = width;
     if (this.x > width) this.x = 0;
     if (this.y < 0) this.y = height;
     if (this.y > height) this.y = 0;
+
+    // Update size to create a pulsating effect
+    this.size = this.baseSize + sin((frameCount + this.offset) * 0.05) * 10;
   }
 
   display() {
-    let index = (floor(this.x) + floor(this.y) * width) * 4;
-    pixels[index] = 200;
-    pixels[index + 1] = 100 + this.alpha;
-    pixels[index + 2] = 255;
-    pixels[index + 3] = this.alpha;
+    noStroke();
+    fill(100, 150, 255, this.alpha);
+    ellipse(this.x, this.y, this.size);
   }
 }
+
 
     </script>
 </body>
