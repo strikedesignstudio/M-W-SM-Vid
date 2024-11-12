@@ -2,15 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Full-Screen Water Ripple Effect</title>
+    <title>Water Ripple Effect with Download Button</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/spite/ccapture.js/build/CCapture.all.min.js"></script>
     <style>
-        body { margin: 0; display: flex; justify-content: center; align-items: center; }
-        canvas { display: block; border: 1px solid black; }
+        body { margin: 0; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        canvas { display: block; border: 1px solid black; margin-bottom: 10px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
     </style>
 </head>
 <body>
+    <button id="downloadButton">Download Video</button>
     <script>
         let img;
         let capturer;
@@ -37,6 +39,10 @@
 
             recording = true;
             capturer.start();
+
+            // Add event listener for the download button
+            const downloadButton = document.getElementById("downloadButton");
+            downloadButton.addEventListener("click", stopAndDownload);
         }
 
         function draw() {
@@ -84,12 +90,15 @@
             // Capture each frame for the video
             if (recording) {
                 capturer.capture(canvas);
-                if (frameCount >= duration * fps) {
-                    capturer.stop();
-                    capturer.save();
-                    noLoop();
-                    recording = false;
-                }
+            }
+        }
+
+        function stopAndDownload() {
+            if (recording) {
+                recording = false;
+                capturer.stop();
+                capturer.save();
+                noLoop(); // Stop the animation loop
             }
         }
 
