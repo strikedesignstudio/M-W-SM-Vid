@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/gh/spite/ccapture.js/build/CCapture.all.min.js"></script>
     <style>
         body { margin: 0; display: flex; justify-content: center; align-items: center; }
-        canvas { border: 1px solid black; }
+        canvas { border: 1px solid black; display: block; }
     </style>
 </head>
 <body>
@@ -18,15 +18,15 @@
         let duration = 60; // Video duration in seconds
         let fps = 300;
         let recording = false;
+        let aspectRatio;
 
         function preload() {
-            img = loadImage("m.png"); // Replace with your image file
+            img = loadImage("your-image.png"); // Replace with your image file
         }
 
         function setup() {
-            let canvasHeight = windowHeight;
-            let canvasWidth = (img.width / img.height) * canvasHeight;
-            createCanvas(canvasWidth, canvasHeight);
+            aspectRatio = img.width / img.height;
+            resizeCanvasToFit();
             
             // Set up video capture
             capturer = new CCapture({
@@ -36,38 +36,40 @@
             });
 
             frameRate(fps);
-            noLoop(); // Prevent continuous draw; we'll handle frame updates manually
             recording = true;
             capturer.start();
         }
 
         function draw() {
             background(0, 0); // Transparent background
-
-            // Resize and center the image while maintaining aspect ratio
+            let imgWidth = height * aspectRatio;
             let imgHeight = height;
-            let imgWidth = (img.width / img.height) * height;
+
+            // Center the image within the canvas
+            let offsetX = (width - imgWidth) / 2;
+            let offsetY = (height - imgHeight) / 2;
 
             img.loadPixels();
-
-            // Animate water distortion
             let time = millis() * 0.0005;
+
             for (let y = 0; y < imgHeight; y += pixelSize) {
                 for (let x = 0; x < imgWidth; x += pixelSize) {
-                    let index = (x + y * img.width) * 4;
+                    let ix = int((x / imgWidth) * img.width);
+                    let iy = int((y / imgHeight) * img.height);
+                    let index = (ix + iy * img.width) * 4;
+
                     let r = img.pixels[index];
                     let g = img.pixels[index + 1];
                     let b = img.pixels[index + 2];
                     let a = img.pixels[index + 3];
 
-                    // Apply noise-based offset to warp pixels over time
-                    let offsetX = int(noise(x * 0.05, y * 0.05, time) * pixelSize) - pixelSize / 2;
-                    let offsetY = int(noise(y * 0.05, x * 0.05, time) * pixelSize) - pixelSize / 2;
+                    // Apply noise-based offset for water ripple effect
+                    let noiseOffsetX = int(noise(x * 0.05, y * 0.05, time) * pixelSize) - pixelSize / 2;
+                    let noiseOffsetY = int(noise(y * 0.05, x * 0.05, time) * pixelSize) - pixelSize / 2;
 
-                    // Draw pixelated rectangle with dynamic distortion
                     fill(r, g, b, a);
                     noStroke();
-                    rect(x + offsetX, y + offsetY, pixelSize, pixelSize);
+                    rect(offsetX + x + noiseOffsetX, offsetY + y + noiseOffsetY, pixelSize, pixelSize);
                 }
             }
 
@@ -84,8 +86,12 @@
         }
 
         function windowResized() {
+            resizeCanvasToFit();
+        }
+
+        function resizeCanvasToFit() {
             let canvasHeight = windowHeight;
-            let canvasWidth = (img.width / img.height) * canvasHeight;
+            let canvasWidth = min(windowWidth, canvasHeight * aspectRatio);
             resizeCanvas(canvasWidth, canvasHeight);
         }
     </script>
