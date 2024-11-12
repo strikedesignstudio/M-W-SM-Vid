@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Water Distortion Effect</title>
+    <script src="p5.js"></script>
+</head>
+<body>
+    <script>
+        let img;
+        let pixelSize = 10; // Control the pixelation level
+
+        // Preload the image
+        function preload() {
+            img = loadImage("m.png"); // Replace with your image file
+        }
+
+        function setup() {
+            createCanvas(1080, 1920);
+            noLoop();
+        }
+
+        function draw() {
+            background(0, 0); // Transparent background
+            img.loadPixels();
+            
+            for (let y = 0; y < img.height; y += pixelSize) {
+                for (let x = 0; x < img.width; x += pixelSize) {
+                    // Get pixel color
+                    let index = (x + y * img.width) * 4;
+                    let r = img.pixels[index];
+                    let g = img.pixels[index + 1];
+                    let b = img.pixels[index + 2];
+                    let a = img.pixels[index + 3];
+
+                    // Apply a noise-based offset to warp the pixels
+                    let offsetX = int(noise(x * 0.05, y * 0.05) * pixelSize);
+                    let offsetY = int(noise(y * 0.05, x * 0.05) * pixelSize);
+                    
+                    // Draw a pixelated rectangle with distortion
+                    fill(r, g, b, a);
+                    noStroke();
+                    rect(x + offsetX, y + offsetY, pixelSize, pixelSize);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
