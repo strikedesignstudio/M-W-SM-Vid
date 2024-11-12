@@ -19,8 +19,8 @@
         let duration = 60; // Duration in seconds
         let fps = 300;
         let recording = false;
-        let pixelSize = 4; // Control the pixelation level
-        let noiseScale = 0.02; // Adjust for water ripple intensity
+        let pixelSize = 2; // Control the pixelation level
+        let noiseScale = 10; // Adjust for water ripple intensity
 
         function preload() {
             img = loadImage("m.png"); // Replace with your image file
@@ -32,7 +32,7 @@
             
             // Start video capture
             capturer = new CCapture({
-                format: 'webm',
+                format: 'mp4',
                 framerate: fps,
                 verbose: true
             });
