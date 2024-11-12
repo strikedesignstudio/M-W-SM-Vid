@@ -2,78 +2,86 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Responsive Water Distortion</title>
+    <title>Full-Screen Water Ripple Effect</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/spite/ccapture.js/build/CCapture.all.min.js"></script>
     <style>
         body { margin: 0; display: flex; justify-content: center; align-items: center; }
-        canvas { border: 1px solid black; display: block; }
+        canvas { display: block; border: 1px solid black; }
     </style>
 </head>
 <body>
     <script>
         let img;
-        let pixelSize = 8; // Control the pixelation level
         let capturer;
-        let duration = 60; // Video duration in seconds
+        let duration = 60; // Duration in seconds
         let fps = 300;
         let recording = false;
-        let aspectRatio;
+        let pixelSize = 4; // Control the pixelation level
+        let noiseScale = 0.02; // Adjust for water ripple intensity
 
         function preload() {
             img = loadImage("m.png"); // Replace with your image file
         }
 
         function setup() {
-            aspectRatio = img.width / img.height;
-            resizeCanvasToFit();
+            createCanvas(windowWidth, windowHeight);
+            frameRate(fps);
             
-            // Set up video capture
+            // Start video capture
             capturer = new CCapture({
                 format: 'webm',
                 framerate: fps,
                 verbose: true
             });
 
-            frameRate(fps);
             recording = true;
             capturer.start();
         }
 
         function draw() {
             background(0, 0); // Transparent background
-            let imgWidth = height * aspectRatio;
-            let imgHeight = height;
 
-            // Center the image within the canvas
+            // Draw the image scaled to fit the screen
+            let aspectRatio = img.width / img.height;
+            let imgHeight = height;
+            let imgWidth = imgHeight * aspectRatio;
+            if (imgWidth > width) {
+                imgWidth = width;
+                imgHeight = imgWidth / aspectRatio;
+            }
             let offsetX = (width - imgWidth) / 2;
             let offsetY = (height - imgHeight) / 2;
-
+            
+            // Load image pixels and distort with noise
             img.loadPixels();
             let time = millis() * 0.0005;
 
-            for (let y = 0; y < imgHeight; y += pixelSize) {
-                for (let x = 0; x < imgWidth; x += pixelSize) {
-                    let ix = int((x / imgWidth) * img.width);
-                    let iy = int((y / imgHeight) * img.height);
-                    let index = (ix + iy * img.width) * 4;
+            for (let y = 0; y < height; y += pixelSize) {
+                for (let x = 0; x < width; x += pixelSize) {
+                    // Map the x, y coordinates to the image dimensions
+                    let ix = int(map(x, offsetX, offsetX + imgWidth, 0, img.width));
+                    let iy = int(map(y, offsetY, offsetY + imgHeight, 0, img.height));
 
-                    let r = img.pixels[index];
-                    let g = img.pixels[index + 1];
-                    let b = img.pixels[index + 2];
-                    let a = img.pixels[index + 3];
+                    if (ix >= 0 && ix < img.width && iy >= 0 && iy < img.height) {
+                        let index = (ix + iy * img.width) * 4;
+                        let r = img.pixels[index];
+                        let g = img.pixels[index + 1];
+                        let b = img.pixels[index + 2];
+                        let a = img.pixels[index + 3];
 
-                    // Apply noise-based offset for water ripple effect
-                    let noiseOffsetX = int(noise(x * 0.05, y * 0.05, time) * pixelSize) - pixelSize / 2;
-                    let noiseOffsetY = int(noise(y * 0.05, x * 0.05, time) * pixelSize) - pixelSize / 2;
+                        // Apply noise-based distortion effect
+                        let noiseX = noise(x * noiseScale, y * noiseScale, time) * pixelSize;
+                        let noiseY = noise(y * noiseScale, x * noiseScale, time) * pixelSize;
 
-                    fill(r, g, b, a);
-                    noStroke();
-                    rect(offsetX + x + noiseOffsetX, offsetY + y + noiseOffsetY, pixelSize, pixelSize);
+                        fill(r, g, b, a);
+                        noStroke();
+                        rect(x + noiseX - pixelSize / 2, y + noiseY - pixelSize / 2, pixelSize, pixelSize);
+                    }
                 }
             }
 
-            // Capture each frame if recording
+            // Capture each frame for the video
             if (recording) {
                 capturer.capture(canvas);
                 if (frameCount >= duration * fps) {
@@ -86,13 +94,7 @@
         }
 
         function windowResized() {
-            resizeCanvasToFit();
-        }
-
-        function resizeCanvasToFit() {
-            let canvasHeight = windowHeight;
-            let canvasWidth = min(windowWidth, canvasHeight * aspectRatio);
-            resizeCanvas(canvasWidth, canvasHeight);
+            resizeCanvas(windowWidth, windowHeight);
         }
     </script>
 </body>
