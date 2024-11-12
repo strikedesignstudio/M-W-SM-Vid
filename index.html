@@ -2,71 +2,116 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Fluid Water Droplet Effect</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/spite/ccapture.js/build/CCapture.all.min.js"></script>
+    <title>Fluid Simulation</title>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; }
-        canvas { display: block; }
-        button { position: fixed; top: 20px; left: 20px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+
     </style>
 </head>
 <body>
-    <button id="downloadButton">Download Video</button>
+
     <script>
-        let img, shaderProgram, capturer;
-        let recording = false;
-        let duration = 60;
-        let fps = 300;
+        let particles = [];
+let recorder;
+let chunks = [];
+let canvas;
+let recording = false;
+const duration = 60 * 1000; // 60 seconds
+const fps = 30;
+const canvasWidth = 1080;
+const canvasHeight = 1920;
 
-        function preload() {
-            img = loadImage("m.png");
-            shaderProgram = loadShader('waterDistortion.vert', 'waterDistortion.frag');
-        }
+function setup() {
+  frameRate(fps);
+  canvas = createCanvas(canvasWidth, canvasHeight);
+  canvas.id("p5Canvas");
+  pixelDensity(1);
 
-        function setup() {
-            createCanvas(windowWidth, windowHeight, WEBGL);
-            frameRate(fps);
-            
-            capturer = new CCapture({
-                format: 'webm',
-                framerate: fps,
-                verbose: true
-            });
+  // Initialize particles
+  for (let i = 0; i < 300; i++) {
+    particles.push(new Particle());
+  }
 
-            // Start recording automatically
-            recording = true;
-            capturer.start();
+  // Setup MediaRecorder to record the canvas
+  let stream = document.getElementById('p5Canvas').captureStream(fps);
+  recorder = new MediaRecorder(stream);
+  recorder.ondataavailable = (e) => chunks.push(e.data);
+  recorder.onstop = saveVideo;
+  
+  // Start recording
+  startRecording();
+}
 
-            // Button for downloading the video
-            const downloadButton = document.getElementById("downloadButton");
-            downloadButton.addEventListener("click", stopAndDownload);
-        }
+function draw() {
+  background(10, 30, 50, 50); // Semi-transparent background for fluid effect
+  
+  loadPixels();
+  
+  for (let p of particles) {
+    p.update();
+    p.display();
+  }
 
-        function draw() {
-            shader(shaderProgram);
-            shaderProgram.setUniform('uResolution', [width, height]);
-            shaderProgram.setUniform('uTime', millis() / 1000.0);
-            shaderProgram.setUniform('uImage', img);
-            rect(-width / 2, -height / 2, width, height);
+  updatePixels();
+}
 
-            if (recording) {
-                capturer.capture(canvas);
-            }
-        }
+function startRecording() {
+  recording = true;
+  recorder.start();
+  console.log("Recording started...");
 
-        function stopAndDownload() {
-            if (recording) {
-                recording = false;
-                capturer.stop();
-                capturer.save();
-                noLoop();
-            }
-        }
+  // Automatically stop recording after the set duration
+  setTimeout(() => {
+    recorder.stop();
+    console.log("Recording stopped.");
+  }, duration);
+}
 
-        function windowResized() {
-            resizeCanvas(windowWidth, windowHeight);
-        }
+function saveVideo() {
+  const blob = new Blob(chunks, { type: 'video/webm' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'fluid_simulation.webm';
+  a.click();
+  chunks = [];
+}
+
+// Particle class
+class Particle {
+  constructor() {
+    this.x = random(width);
+    this.y = random(height);
+    this.vx = 0;
+    this.vy = 0;
+    this.alpha = random(50, 200);
+  }
+
+  update() {
+    // Add fluid-like movement using Perlin noise
+    let angle = noise(this.x * 0.01, this.y * 0.01) * TWO_PI * 2;
+    this.vx = cos(angle);
+    this.vy = sin(angle);
+
+    this.x += this.vx;
+    this.y += this.vy;
+
+    // Wrap around the edges
+    if (this.x < 0) this.x = width;
+    if (this.x > width) this.x = 0;
+    if (this.y < 0) this.y = height;
+    if (this.y > height) this.y = 0;
+  }
+
+  display() {
+    let index = (floor(this.x) + floor(this.y) * width) * 4;
+    pixels[index] = 200;
+    pixels[index + 1] = 100 + this.alpha;
+    pixels[index + 2] = 255;
+    pixels[index + 3] = this.alpha;
+  }
+}
+
     </script>
 </body>
 </html>
