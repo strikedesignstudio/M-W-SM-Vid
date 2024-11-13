@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASCII Ripple Effect</title>
+    <title>Flowing ASCII Waves</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
     <style>
         body { margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; }
@@ -25,7 +25,7 @@
             createCanvas(width, height);
             frameRate(fps);
             textAlign(CENTER, CENTER);
-            textSize(20);
+            textSize(18);
             fill(255);
             noStroke();
         }
@@ -33,27 +33,36 @@
         function draw() {
             background(0);
             
-            // Calculate the current ripple radius based on the frame count
+            let centerX = width / 2;
+            let centerY = height / 2;
             let maxRadius = min(width, height) / 2;
-            let radius = (frameCount / totalFrames) * maxRadius;
-
-            // Draw concentric ASCII ripples
-            for (let r = 0; r < radius; r += 20) {
+            
+            // Adjust wave speed and frequency
+            let waveSpeed = frameCount * 0.05;
+            let frequency = 0.1;
+            
+            // Draw the flowing waves
+            for (let r = 0; r < maxRadius; r += 20) {
                 for (let angle = 0; angle < 360; angle += 10) {
                     let radian = radians(angle);
-                    let x = width / 2 + r * cos(radian);
-                    let y = height / 2 + r * sin(radian);
-
-                    // Alternate between characters 'M' and 'W'
+                    
+                    // Create oscillation effect using sine wave
+                    let waveOffset = sin(r * frequency - waveSpeed) * 10;
+                    
+                    // Calculate position with wave effect
+                    let x = centerX + (r + waveOffset) * cos(radian);
+                    let y = centerY + (r + waveOffset) * sin(radian);
+                    
+                    // Alternate characters between 'M' and 'W'
                     let char = (int(r / 20 + angle / 10) % 2 === 0) ? char1 : char2;
                     text(char, x, y);
                 }
             }
 
-            // Increment the frame count
+            // Increment frame count for smooth animation
             frameCount++;
             if (frameCount >= totalFrames) {
-                noLoop(); // Stop animation after 60 seconds
+                noLoop(); // Stop animation after the specified duration
             }
         }
     </script>
