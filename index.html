@@ -24,14 +24,16 @@
         const charSet = [' ', 'M', '&', 'W'];
 
         // Load the video from user input
-        document.getElementById('videoInput').onchange = function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const url = URL.createObjectURL(file);
-                videoElement.src = url;
-                videoElement.play();
-            }
-        };
+        document.getElementById('videoInput').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const url = URL.createObjectURL(file);
+        const videoElement = document.getElementById('video');
+        videoElement.src = url;
+        videoElement.load();  // Ensure the video is loaded
+        videoElement.play();
+    }
+});
 
         // Set up the canvas for frame extraction
         const canvas = document.createElement('canvas');
