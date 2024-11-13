@@ -3,16 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video to ASCII Art</title>
+    <title>ASCII Art Video Renderer</title>
+    <style>
+        body { display: flex; flex-direction: column; align-items: center; font-family: monospace; }
+        video { display: none; }
+        pre { font-size: 8px; line-height: 7px; white-space: pre; }
+    </style>
 </head>
 <body>
+    <h2>ASCII Art Video Renderer</h2>
     <input type="file" id="videoInput" accept="video/*">
-    <video id="video" controls style="display:none;"></video>
-    <canvas id="canvas" style="display:none;"></canvas>
-    <button id="convertBtn">Convert to ASCII Art</button>
-    <button id="downloadBtn" style="display:none;">Download ASCII Video</button>
+    <video id="video" controls></video>
+    <pre id="asciiOutput"></pre>
 
-    <script src="whammy.js"></script>
-    <script src="ascii-video.js"></script>
+    <script>
+        const videoElement = document.getElementById('video');
+        const asciiOutput = document.getElementById('asciiOutput');
+
+        // ASCII characters based on brightness levels
+        const charSet = [' ', 'M', '&', 'W'];
+
+        // Load the video from user input
+        document.getElementById('videoInput').onchange = function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                videoElement.src = url;
+                videoElement.play();
+            }
+        };
+
+        // Set up the canvas for frame extraction
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+
+        // Convert video frames to ASCII and display on screen
+        videoElement.addEventListener('play', function() {
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+
+            function renderAscii() {
+                if (videoElement.paused || videoElement.ended) return;
+
+                // Draw the current frame onto the canvas
+                context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+                const frameData = context.getImageData(0, 0, canvas.width, canvas.height);
+
+                // Convert the frame to ASCII art
+                const asciiArt = convertFrameToAscii(frameData);
+                asciiOutput.textContent = asciiArt;
+
+                // Continue rendering the next frame
+                requestAnimationFrame(renderAscii);
+            }
+
+            renderAscii();
+        });
+
+        // Convert image data to ASCII art
+        function convertFrameToAscii(imageData) {
+            const { data, width, height } = imageData;
+            let asciiStr = '';
+
+            for (let y = 0; y < height; y += 8) { // Adjust sampling to control performance
+                for (let x = 0; x < width; x += 4) {
+                    const i = (y * width + x) * 4;
+                    const brightness = getBrightness(data[i], data[i + 1], data[i + 2]);
+                    const charIndex = Math.floor((brightness / 255) * (charSet.length - 1));
+                    asciiStr += charSet[charIndex];
+                }
+                asciiStr += '\n';
+            }
+            return asciiStr;
+        }
+
+        // Calculate brightness of a pixel
+        function getBrightness(r, g, b) {
+            return 0.299 * r + 0.587 * g + 0.114 * b;
+        }
+    </script>
 </body>
 </html>
