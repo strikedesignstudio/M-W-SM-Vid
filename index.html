@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Video to ASCII with p5.js</title>
+    <title>Convert Video to ASCII</title>
     <style>
         body { text-align: center; background-color: #000; color: #00ff00; font-family: monospace; }
         pre { white-space: pre; font-size: 8px; line-height: 8px; }
@@ -10,62 +10,88 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
 </head>
 <body>
-    <h1>Upload Video and Render as ASCII</h1>
+    <h1>Convert Video to ASCII Art</h1>
     <input type="file" id="upload" accept="video/mp4" />
     <pre id="ascii"></pre>
 
     <script>
         let video;
-        let asciiDiv;
-        const asciiChars = " .:-=+*#%@";
-        let playing = false;
+        let asciiChars = " .:-=+*#%@";
+        let asciiArt = "";
+        let isProcessing = false;
 
         function setup() {
-            noCanvas();
-            asciiDiv = select('#ascii');
+            noCanvas();  // We don't need a canvas here, we are using video and preformatted text for ASCII.
             const uploadInput = select('#upload');
             uploadInput.changed(handleVideoUpload);
         }
 
+        // Handle video upload and load it
         function handleVideoUpload(event) {
             const file = event.target.files[0];
             if (file) {
                 const url = URL.createObjectURL(file);
-                if (video) {
-                    video.remove();
-                }
-                video = createVideo(url, videoLoaded);
+                video = createVideo(url, onVideoLoaded);
                 video.hide();
             }
         }
 
-        function videoLoaded() {
+        // This function is called when the video is loaded and ready
+        function onVideoLoaded() {
             video.play();
-            playing = true;
+            isProcessing = true;
+            asciiArt = ""; // Reset ASCII art on each video load
+            processVideoFrames();
         }
 
-        function draw() {
-            if (playing && video) {
-                const width = 80;
-                const height = Math.floor(video.height / (video.width / width));
-                video.size(width, height);
-                video.loadPixels();
+        // Process video frames and convert to ASCII
+        function processVideoFrames() {
+            // We need to process every frame in the video
+            video.onended(() => {
+                // Once the video ends, stop processing
+                console.log("Video processing completed!");
+            });
 
-                let asciiArt = "";
-                for (let y = 0; y < video.height; y++) {
-                    for (let x = 0; x < video.width; x++) {
-                        const index = (x + y * video.width) * 4;
-                        const r = video.pixels[index];
-                        const g = video.pixels[index + 1];
-                        const b = video.pixels[index + 2];
-                        const brightness = (r + g + b) / 3;
-                        const charIndex = floor(map(brightness, 0, 255, asciiChars.length - 1, 0));
-                        asciiArt += asciiChars[charIndex];
+            function processFrame() {
+                if (video.time() < video.duration()) {
+                    // Capture pixels of the current video frame
+                    video.loadPixels();
+
+                    let asciiFrame = "";
+                    const width = 80;  // Set ASCII output width (can adjust)
+                    const height = Math.floor(video.height / (video.width / width)); // Keep aspect ratio
+                    video.size(width, height); // Resize video frame for ASCII output
+
+                    for (let y = 0; y < height; y++) {
+                        for (let x = 0; x < width; x++) {
+                            const i = (x + y * width) * 4; // pixel index in video.pixels
+                            const r = video.pixels[i];
+                            const g = video.pixels[i + 1];
+                            const b = video.pixels[i + 2];
+                            const avg = (r + g + b) / 3; // Calculate brightness
+                            const charIndex = Math.floor(map(avg, 0, 255, asciiChars.length - 1, 0));
+                            asciiFrame += asciiChars[charIndex]; // Map brightness to ASCII char
+                        }
+                        asciiFrame += "\n"; // Newline for each row of pixels
                     }
-                    asciiArt += "\n";
+
+                    // Append the ASCII frame to the full ASCII art
+                    asciiArt += asciiFrame;
+
+                    // Display the current state of ASCII art (optional, to show progress)
+                    select('#ascii').html(asciiArt);
+
+                    // Continue processing next frame
+                    setTimeout(processFrame, 1000 / 30); // Process next frame at 30 FPS
+                } else {
+                    // Video is complete, stop processing
+                    isProcessing = false;
+                    console.log("Video processed into ASCII art!");
+                    // Optionally, you can allow user to download the full ASCII art as a file here
                 }
-                asciiDiv.html(asciiArt);
             }
+
+            processFrame();  // Start processing frames
         }
     </script>
 </body>
