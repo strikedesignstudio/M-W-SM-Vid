@@ -2,80 +2,71 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video to ASCII</title>
+    <title>Video to ASCII with p5.js</title>
     <style>
         body { text-align: center; background-color: #000; color: #00ff00; font-family: monospace; }
-        #ascii { white-space: pre; font-size: 8px; line-height: 8px; }
+        pre { white-space: pre; font-size: 8px; line-height: 8px; }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
 </head>
 <body>
     <h1>Upload Video and Render as ASCII</h1>
     <input type="file" id="upload" accept="video/mp4" />
-    <video id="video" muted style="display:none;"></video>
-    <canvas id="canvas" style="display:none;"></canvas>
     <pre id="ascii"></pre>
 
     <script>
+        let video;
+        let asciiDiv;
         const asciiChars = " .:-=+*#%@";
-        const uploadInput = document.getElementById("upload");
-        const video = document.getElementById("video");
-        const canvas = document.getElementById("canvas");
-        const asciiContainer = document.getElementById("ascii");
-        const ctx = canvas.getContext("2d");
+        let playing = false;
 
-        uploadInput.addEventListener("change", handleVideoUpload);
+        function setup() {
+            noCanvas();
+            asciiDiv = select('#ascii');
+            const uploadInput = select('#upload');
+            uploadInput.changed(handleVideoUpload);
+        }
 
-        async function handleVideoUpload(event) {
+        function handleVideoUpload(event) {
             const file = event.target.files[0];
             if (file) {
                 const url = URL.createObjectURL(file);
-                video.src = url;
-
-                // Ensure the video loads properly
-                try {
-                    await video.load();
-                    video.play();
-                    video.addEventListener("play", renderASCII);
-                } catch (err) {
-                    console.error("Error loading video:", err);
+                if (video) {
+                    video.remove();
                 }
+                video = createVideo(url, videoLoaded);
+                video.hide();
             }
         }
 
-        function renderASCII() {
-            const width = 80;
-            const height = Math.floor(video.videoHeight / (video.videoWidth / width));
-            canvas.width = width;
-            canvas.height = height;
-
-            function drawFrame() {
-                if (!video.paused && !video.ended) {
-                    ctx.drawImage(video, 0, 0, width, height);
-                    const frame = ctx.getImageData(0, 0, width, height);
-                    const asciiArt = convertToASCII(frame, width, height);
-                    asciiContainer.textContent = asciiArt;
-                    requestAnimationFrame(drawFrame);
-                }
-            }
-            drawFrame();
+        function videoLoaded() {
+            video.play();
+            playing = true;
         }
 
-        function convertToASCII(frame, width, height) {
-            const { data } = frame;
-            let asciiStr = "";
-            for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-                const avg = (r + g + b) / 3;
-                const charIndex = Math.floor((avg / 255) * (asciiChars.length - 1));
-                asciiStr += asciiChars[charIndex];
-                if ((i / 4 + 1) % width === 0) asciiStr += "\n";
+        function draw() {
+            if (playing && video) {
+                const width = 80;
+                const height = Math.floor(video.height / (video.width / width));
+                video.size(width, height);
+                video.loadPixels();
+
+                let asciiArt = "";
+                for (let y = 0; y < video.height; y++) {
+                    for (let x = 0; x < video.width; x++) {
+                        const index = (x + y * video.width) * 4;
+                        const r = video.pixels[index];
+                        const g = video.pixels[index + 1];
+                        const b = video.pixels[index + 2];
+                        const brightness = (r + g + b) / 3;
+                        const charIndex = floor(map(brightness, 0, 255, asciiChars.length - 1, 0));
+                        asciiArt += asciiChars[charIndex];
+                    }
+                    asciiArt += "\n";
+                }
+                asciiDiv.html(asciiArt);
             }
-            return asciiStr;
         }
     </script>
 </body>
 </html>
-
