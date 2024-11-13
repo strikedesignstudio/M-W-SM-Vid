@@ -5,38 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MP4 to ASCII Art</title>
     <style>
-        body { background-color: white; color: black; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        body { background-color: black; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
         pre { font-family: monospace; line-height: 80%; }
         video { display: none; }
     </style>
 </head>
 <body>
-    <video id="video" src="video.mp4" autoplay loop muted></video>
-    <pre id="ascii"></pre>
+    <video id="video" autoplay muted loop playsinline>
+        <source src="video.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    <pre id="ascii">Loading...</pre>
 
     <script>
         const video = document.getElementById('video');
         const asciiOutput = document.getElementById('ascii');
-
         const asciiChars = ['W', '&', 'M'];
+
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        
-        // Set canvas dimensions
-        const scale = 0.1; // Adjust this to control ASCII art size
-        const fontRatio = 2; // Adjust character height ratio
+
         let width, height;
 
-        video.addEventListener('play', () => {
-            width = video.videoWidth * scale;
-            height = (video.videoHeight * scale) / fontRatio;
-            canvas.width = width;
-            canvas.height = height;
-
-            renderASCII();
-        });
-
-        // Convert a single frame to ASCII
+        // Function to convert frame to ASCII
         function renderFrameToASCII() {
             ctx.drawImage(video, 0, 0, width, height);
             const imageData = ctx.getImageData(0, 0, width, height);
@@ -51,7 +42,7 @@
 
                     // Calculate brightness (0 = black, 255 = white)
                     const brightness = (r + g + b) / 3;
-                    
+
                     // Map brightness to ASCII character
                     const charIndex = Math.floor((brightness / 256) * asciiChars.length);
                     asciiArt += asciiChars[charIndex];
@@ -61,14 +52,29 @@
             return asciiArt;
         }
 
-        // Continuously render ASCII art
+        // Function to continuously render ASCII art
         function renderASCII() {
             if (video.paused || video.ended) return;
-
             asciiOutput.textContent = renderFrameToASCII();
             requestAnimationFrame(renderASCII);
         }
+
+        // Initialize video and canvas dimensions
+        video.addEventListener('canplay', () => {
+            const scale = 0.15;
+            const fontRatio = 2;
+
+            width = video.videoWidth * scale;
+            height = (video.videoHeight * scale) / fontRatio;
+            canvas.width = width;
+            canvas.height = height;
+
+            console.log(`Video dimensions: ${width}x${height}`);
+            renderASCII();
+        });
+
+        // Debugging to check if the video is loading
+        video.addEventListener('error', () => console.error("Error loading video"));
     </script>
 </body>
 </html>
-
