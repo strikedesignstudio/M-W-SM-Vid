@@ -3,68 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flowing ASCII Waves</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
-    <style>
-        body { margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; }
-        canvas { display: block; height:95%; width:auto;}
-    </style>
+    <title>Video to ASCII Art</title>
 </head>
 <body>
-    <script>
-        const width = 1080;
-        const height = 1920;
-        const fps = 30;
-        const duration = 60;
-        const totalFrames = fps * duration;
-        let frameCount = 0;
-        let char1 = 'M';
-        let char2 = 'W';
+    <input type="file" id="videoInput" accept="video/*">
+    <video id="video" controls style="display:none;"></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <button id="convertBtn">Convert to ASCII Art</button>
+    <button id="downloadBtn" style="display:none;">Download ASCII Video</button>
 
-        function setup() {
-            createCanvas(width, height);
-            frameRate(fps);
-            textAlign(CENTER, CENTER);
-            textSize(18);
-            fill(255);
-            noStroke();
-        }
-
-        function draw() {
-            background(0);
-            
-            let centerX = width / 2;
-            let centerY = height / 2;
-            let maxRadius = min(width, height) / 2;
-            
-            // Adjust wave speed and frequency
-            let waveSpeed = frameCount * 0.05;
-            let frequency = 0.1;
-            
-            // Draw the flowing waves
-            for (let r = 0; r < maxRadius; r += 20) {
-                for (let angle = 0; angle < 360; angle += 10) {
-                    let radian = radians(angle);
-                    
-                    // Create oscillation effect using sine wave
-                    let waveOffset = sin(r * frequency - waveSpeed) * 10;
-                    
-                    // Calculate position with wave effect
-                    let x = centerX + (r + waveOffset) * cos(radian);
-                    let y = centerY + (r + waveOffset) * sin(radian);
-                    
-                    // Alternate characters between 'M' and 'W'
-                    let char = (int(r / 20 + angle / 10) % 2 === 0) ? char1 : char2;
-                    text(char, x, y);
-                }
-            }
-
-            // Increment frame count for smooth animation
-            frameCount++;
-            if (frameCount >= totalFrames) {
-                noLoop(); // Stop animation after the specified duration
-            }
-        }
-    </script>
+    <script src="whammy.js"></script>
+    <script src="ascii-video.js"></script>
 </body>
 </html>
