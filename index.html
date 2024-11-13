@@ -12,12 +12,12 @@
 <body>
     <h1>Upload Video and Render as ASCII</h1>
     <input type="file" id="upload" accept="video/mp4" />
-    <video id="video" style="display:none;" controls></video>
+    <video id="video" muted style="display:none;"></video>
     <canvas id="canvas" style="display:none;"></canvas>
     <pre id="ascii"></pre>
 
     <script>
-        const asciiChars = " M&W"; // Characters to map brightness
+        const asciiChars = " .:-=+*#%@";
         const uploadInput = document.getElementById("upload");
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
@@ -26,18 +26,25 @@
 
         uploadInput.addEventListener("change", handleVideoUpload);
 
-        function handleVideoUpload(event) {
+        async function handleVideoUpload(event) {
             const file = event.target.files[0];
             if (file) {
                 const url = URL.createObjectURL(file);
                 video.src = url;
-                video.play();
-                video.addEventListener("play", renderASCII);
+
+                // Ensure the video loads properly
+                try {
+                    await video.load();
+                    video.play();
+                    video.addEventListener("play", renderASCII);
+                } catch (err) {
+                    console.error("Error loading video:", err);
+                }
             }
         }
 
         function renderASCII() {
-            const width = 80; // Adjust for the ASCII resolution
+            const width = 80;
             const height = Math.floor(video.videoHeight / (video.videoWidth / width));
             canvas.width = width;
             canvas.height = height;
@@ -71,3 +78,4 @@
     </script>
 </body>
 </html>
+
