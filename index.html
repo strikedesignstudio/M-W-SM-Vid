@@ -38,6 +38,8 @@
 
         // This function is called when the video is loaded and ready
         function onVideoLoaded() {
+            // Ensure that video has valid width and height before starting processing
+            video.size(video.width, video.height);  // Initialize video size
             video.play();
             isProcessing = true;
             asciiArt = ""; // Reset ASCII art on each video load
@@ -54,35 +56,40 @@
 
             function processFrame() {
                 if (video.time() < video.duration()) {
-                    // Capture pixels of the current video frame
-                    video.loadPixels();
+                    // Ensure video has pixels loaded and valid width/height
+                    if (video.width > 0 && video.height > 0) {
+                        video.loadPixels();
 
-                    let asciiFrame = "";
-                    const width = 80;  // Set ASCII output width (can adjust)
-                    const height = Math.floor(video.height / (video.width / width)); // Keep aspect ratio
-                    video.size(width, height); // Resize video frame for ASCII output
+                        let asciiFrame = "";
+                        const width = 80;  // Set ASCII output width (can adjust)
+                        const height = Math.floor(video.height / (video.width / width)); // Keep aspect ratio
+                        video.size(width, height); // Resize video frame for ASCII output
 
-                    for (let y = 0; y < height; y++) {
-                        for (let x = 0; x < width; x++) {
-                            const i = (x + y * width) * 4; // pixel index in video.pixels
-                            const r = video.pixels[i];
-                            const g = video.pixels[i + 1];
-                            const b = video.pixels[i + 2];
-                            const avg = (r + g + b) / 3; // Calculate brightness
-                            const charIndex = Math.floor(map(avg, 0, 255, asciiChars.length - 1, 0));
-                            asciiFrame += asciiChars[charIndex]; // Map brightness to ASCII char
+                        for (let y = 0; y < height; y++) {
+                            for (let x = 0; x < width; x++) {
+                                const i = (x + y * width) * 4; // pixel index in video.pixels
+                                const r = video.pixels[i];
+                                const g = video.pixels[i + 1];
+                                const b = video.pixels[i + 2];
+                                const avg = (r + g + b) / 3; // Calculate brightness
+                                const charIndex = Math.floor(map(avg, 0, 255, asciiChars.length - 1, 0));
+                                asciiFrame += asciiChars[charIndex]; // Map brightness to ASCII char
+                            }
+                            asciiFrame += "\n"; // Newline for each row of pixels
                         }
-                        asciiFrame += "\n"; // Newline for each row of pixels
+
+                        // Append the ASCII frame to the full ASCII art
+                        asciiArt += asciiFrame;
+
+                        // Display the current state of ASCII art (optional, to show progress)
+                        select('#ascii').html(asciiArt);
+
+                        // Continue processing next frame
+                        setTimeout(processFrame, 1000 / 30); // Process next frame at 30 FPS
+                    } else {
+                        // Wait until the video has valid pixel data
+                        setTimeout(processFrame, 100);  // Retry after a small delay
                     }
-
-                    // Append the ASCII frame to the full ASCII art
-                    asciiArt += asciiFrame;
-
-                    // Display the current state of ASCII art (optional, to show progress)
-                    select('#ascii').html(asciiArt);
-
-                    // Continue processing next frame
-                    setTimeout(processFrame, 1000 / 30); // Process next frame at 30 FPS
                 } else {
                     // Video is complete, stop processing
                     isProcessing = false;
