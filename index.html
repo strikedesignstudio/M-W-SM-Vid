@@ -3,78 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MP4 to ASCII Art</title>
+    <title>Video to ASCII</title>
     <style>
-        body { background-color: black; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        pre { font-family: monospace; line-height: 80%; }
-        video { display: none; }
+        body { text-align: center; background-color: #000; color: #00ff00; font-family: monospace; }
+        #ascii { white-space: pre; font-size: 8px; line-height: 8px; }
     </style>
 </head>
 <body>
-    <video id="video" autoplay muted loop playsinline>
-        <source src="video.mp4" type="video/mp4">
-        Your browser does not support the video tag.
-    </video>
-    <pre id="ascii">Loading...</pre>
+    <h1>Upload Video and Render as ASCII</h1>
+    <input type="file" id="upload" accept="video/mp4" />
+    <video id="video" style="display:none;" controls></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <pre id="ascii"></pre>
 
     <script>
-        const video = document.getElementById('video');
-        const asciiOutput = document.getElementById('ascii');
-        const asciiChars = ['W', '&', 'M'];
+        const asciiChars = " M&W"; // Characters to map brightness
+        const uploadInput = document.getElementById("upload");
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const asciiContainer = document.getElementById("ascii");
+        const ctx = canvas.getContext("2d");
 
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        uploadInput.addEventListener("change", handleVideoUpload);
 
-        let width, height;
-
-        // Function to convert frame to ASCII
-        function renderFrameToASCII() {
-            ctx.drawImage(video, 0, 0, width, height);
-            const imageData = ctx.getImageData(0, 0, width, height);
-            let asciiArt = '';
-
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const index = (y * width + x) * 4;
-                    const r = imageData.data[index];
-                    const g = imageData.data[index + 1];
-                    const b = imageData.data[index + 2];
-
-                    // Calculate brightness (0 = black, 255 = white)
-                    const brightness = (r + g + b) / 3;
-
-                    // Map brightness to ASCII character
-                    const charIndex = Math.floor((brightness / 256) * asciiChars.length);
-                    asciiArt += asciiChars[charIndex];
-                }
-                asciiArt += '\n';
+        function handleVideoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                video.src = url;
+                video.play();
+                video.addEventListener("play", renderASCII);
             }
-            return asciiArt;
         }
 
-        // Function to continuously render ASCII art
         function renderASCII() {
-            if (video.paused || video.ended) return;
-            asciiOutput.textContent = renderFrameToASCII();
-            requestAnimationFrame(renderASCII);
-        }
-
-        // Initialize video and canvas dimensions
-        video.addEventListener('canplay', () => {
-            const scale = 0.15;
-            const fontRatio = 2;
-
-            width = video.videoWidth * scale;
-            height = (video.videoHeight * scale) / fontRatio;
+            const width = 80; // Adjust for the ASCII resolution
+            const height = Math.floor(video.videoHeight / (video.videoWidth / width));
             canvas.width = width;
             canvas.height = height;
 
-            console.log(`Video dimensions: ${width}x${height}`);
-            renderASCII();
-        });
+            function drawFrame() {
+                if (!video.paused && !video.ended) {
+                    ctx.drawImage(video, 0, 0, width, height);
+                    const frame = ctx.getImageData(0, 0, width, height);
+                    const asciiArt = convertToASCII(frame, width, height);
+                    asciiContainer.textContent = asciiArt;
+                    requestAnimationFrame(drawFrame);
+                }
+            }
+            drawFrame();
+        }
 
-        // Debugging to check if the video is loading
-        video.addEventListener('error', () => console.error("Error loading video"));
+        function convertToASCII(frame, width, height) {
+            const { data } = frame;
+            let asciiStr = "";
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                const avg = (r + g + b) / 3;
+                const charIndex = Math.floor((avg / 255) * (asciiChars.length - 1));
+                asciiStr += asciiChars[charIndex];
+                if ((i / 4 + 1) % width === 0) asciiStr += "\n";
+            }
+            return asciiStr;
+        }
     </script>
 </body>
 </html>
