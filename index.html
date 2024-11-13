@@ -2,123 +2,60 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Fluid Simulation</title>
-    <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Ripple Effect</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
     <style>
-
+        body { margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
-
     <script>
+        const width = 1080;
+        const height = 1920;
+        const fps = 30;
+        const duration = 60;
+        const totalFrames = fps * duration;
+        let frameCount = 0;
+        let char1 = 'M';
+        let char2 = 'W';
 
-let particles = [];
-let recorder;
-let chunks = [];
-let canvas;
-let recording = false;
-const duration = 60 * 1000; // 60 seconds
-const fps = 30;
-const canvasWidth = 1080;
-const canvasHeight = 1920;
+        function setup() {
+            createCanvas(width, height);
+            frameRate(fps);
+            textAlign(CENTER, CENTER);
+            textSize(20);
+            fill(255);
+            noStroke();
+        }
 
-function setup() {
-  frameRate(fps);
-  canvas = createCanvas(canvasWidth, canvasHeight);
-  canvas.id("p5Canvas");
-  pixelDensity(1);
-  
-  // Initialize particles
-  for (let i = 0; i < 100; i++) {
-    particles.push(new Particle());
-  }
+        function draw() {
+            background(0);
+            
+            // Calculate the current ripple radius based on the frame count
+            let maxRadius = min(width, height) / 2;
+            let radius = (frameCount / totalFrames) * maxRadius;
 
-  // Setup MediaRecorder to record the canvas
-  let stream = document.getElementById('p5Canvas').captureStream(fps);
-  recorder = new MediaRecorder(stream);
-  recorder.ondataavailable = (e) => chunks.push(e.data);
-  recorder.onstop = saveVideo;
+            // Draw concentric ASCII ripples
+            for (let r = 0; r < radius; r += 20) {
+                for (let angle = 0; angle < 360; angle += 10) {
+                    let radian = radians(angle);
+                    let x = width / 2 + r * cos(radian);
+                    let y = height / 2 + r * sin(radian);
 
-  // Start recording
-  startRecording();
-}
+                    // Alternate between characters 'M' and 'W'
+                    let char = (int(r / 20 + angle / 10) % 2 === 0) ? char1 : char2;
+                    text(char, x, y);
+                }
+            }
 
-function draw() {
-  background(10, 30, 50, 50); // Semi-transparent background for fluid effect
-  
-  // Draw and update each particle
-  for (let p of particles) {
-    p.update();
-    p.display();
-  }
-}
-
-function startRecording() {
-  recording = true;
-  recorder.start();
-  console.log("Recording started...");
-
-  // Automatically stop recording after the set duration
-  setTimeout(() => {
-    recorder.stop();
-    console.log("Recording stopped.");
-  }, duration);
-}
-
-function saveVideo() {
-  const blob = new Blob(chunks, { type: 'video/webm' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'fluid_simulation.webm';
-  a.click();
-  chunks = [];
-}
-
-// Particle class with size variation
-class Particle {
-  constructor() {
-    this.x = random(width);
-    this.y = random(height);
-    this.vx = random(-1, 1);
-    this.vy = random(-1, 1);
-    this.baseSize = random(20, 50);
-    this.size = this.baseSize;
-    this.alpha = random(100, 200);
-    this.offset = random(1000); // Random offset for size oscillation
-  }
-
-  update() {
-    // Add fluid-like movement using Perlin noise
-    let angle = noise(this.x * 0.005, this.y * 0.005) * TWO_PI * 2;
-    this.vx += cos(angle) * 0.5;
-    this.vy += sin(angle) * 0.5;
-
-    this.x += this.vx;
-    this.y += this.vy;
-
-    // Apply gentle friction
-    this.vx *= 0.95;
-    this.vy *= 0.95;
-
-    // Wrap around edges
-    if (this.x < 0) this.x = width;
-    if (this.x > width) this.x = 0;
-    if (this.y < 0) this.y = height;
-    if (this.y > height) this.y = 0;
-
-    // Update size to create a pulsating effect
-    this.size = this.baseSize + sin((frameCount + this.offset) * 0.05) * 10;
-  }
-
-  display() {
-    noStroke();
-    fill(100, 150, 255, this.alpha);
-    ellipse(this.x, this.y, this.size);
-  }
-}
-
-
+            // Increment the frame count
+            frameCount++;
+            if (frameCount >= totalFrames) {
+                noLoop(); // Stop animation after 60 seconds
+            }
+        }
     </script>
 </body>
 </html>
